@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html ng-app>
+  <head>
+    <title>Chat</title>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
+
+    <style>
+        #messages { overflow: scroll-y; height: 500px }
+        #messages .message .user { color: green }
+
+        #messageText { width: 80% }
+    </style>
+
+    <script type="text/javascript">
+        function ChatCtrl($scope, $http, $interval, $q){
+            $scope.messages = <%- messages %>;
+            $scope.isAdmin = <%= isAdmin %>;
+
+            var lastTime = new Date().getTime();
+            var deferred = $q.defer();
+
+            $interval(function(){
+                $http.get('/get', { params: { time: lastTime }}).success(function(data){
+                    if (data.success == true) {
+                        lastTime = new Date().getTime();
+                        deferred.notify(data);
+                    }
+                });
+            }, 2000);
+
+            deferred.promise.then(
+                function (value) {},
+                function (reason) {},
+                function (data) {
+                    $scope.messages = $scope.messages.concat(data.messages);
+                    angular.forEach($scope.messages, function(value, key) {
+                        if (data.deletes.indexOf(value.id) != -1){
+                            $scope.messages.splice(key, 1);
+                        }
+                    });
+                }
+            );
+
+            $scope.sendMesEnter = function($event){
+                if ($event.keyCode == 13)
+                    $scope.sendMes();
+            }
+
+            $scope.sendMes = function(){
+                $http.get('/send', { params: { text: $scope.messageText, time: lastTime } }).success(function(data){
+                    if (data.success == true) {
+                        $scope.messageText = '';
+                        $('#messageText').focus();
+                    }
+                });
+            }
+
+            $scope.remove = function (id){
+                $http.get('/del', { params: { id: id } }, function(data){ });
+            }
+        }
+    </script>
+  </head>
+  <body ng-app ng-controller="ChatCtrl as chat">
+    <h1>Chat <a href="/logout">[logout <%= username %>]</a></h1>
+
+    <div id="messages">
+        <div ng-repeat="m in messages" class="message">
+            <span class="user">{{m.user}}</span>
+            <span class="text">{{m.text}}</span>
+
+            <span class="del" ng-click="remove(m.id)" ng-show="isAdmin">X</span>
+        </div>
+    </div>
+
+    <input id="messageText" ng-keydown="sendMesEnter($event)" ng-model="messageText" />
+    <input id="send" type="button" ng-click="sendMes()" value="send">
+  </body>
+</html>

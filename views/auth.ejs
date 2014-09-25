@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <style>
+        #message { color: red }
+    </style>
+
+    <script>
+        $(function(){
+            $('#loginBtn').click(function(){
+                $.getJSON('/auth_check', { user: $('#user').val(), pass: $('#pass').val() },
+                          function(data){
+                              if (data.success === true) {
+                                  location.href = location.href;
+                              } else {
+                                  $('#message').html(data.message);
+                              }
+                          })
+            });
+        })
+    </script>
+</head>
+
+<body>
+    <h1>Login to Chat :)</h1>
+
+
+    Login: <br />
+    <input type="text" id="user"> <br />
+    Password: <br />
+    <input type="password" id="pass"> <br />
+
+    <div id="message"></div>
+
+    <input type="button" id="loginBtn" value="send">
+
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html ng-app>
+  <head>
+    <title>Chat</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <style>
+        #messages { overflow: scroll-y; height: 500px }
+        #messages .message .user { color: green }
+
+        #messageText { width: 80% }
+        .template { display: none }
+    </style>
+
+    <script type="text/javascript">
+        var messages = <%- messages %>;
+        var isAdmin = <%= isAdmin %>;
+        $(function(){
+            fillMessages(messages);
+
+            $('#messageText').keydown(function(e){
+                if(e.keyCode == 13){ sendMes() }
+            });
+            $('#messages').on('click', '.del', remove);
+        });
+
+        var lastTime = new Date().getTime();
+
+        setInterval(function(){
+            $.getJSON('/get', { time: lastTime }, function(data){
+                if (data.success == true) {
+                    lastTime = new Date().getTime();
+
+                    fillMessages(data.messages);
+                    delMessages(data.deletes)
+                }
+            })
+        }, 2000);
+
+        function delMessages(deletes) {
+            $.each(deletes, function(i, id) {
+                $('#messages [mid='+ id + ']').remove();
+            });
+        }
+
+        function fillMessages(messages){
+            $.each(messages, function(i, m) {
+                var $m = $('#messages .template').clone().removeClass('template').addClass('message');
+
+                $m.attr('mid', m.id);
+                if (!isAdmin) {
+                    $('.del', $m).hide();
+                }
+                $('.user', $m).html(m.user);
+                $('.text', $m).html(m.text);
+
+                $('#messages').append($m);
+            });
+        }
+
+        function sendMes(message){
+            var mesText = $('#messageText');
+            $.getJSON('/send', { text: mesText.val(), time: lastTime }, function(data){
+                    if (data.success == true) {
+                        mesText.val('').focus();
+                    }
+            });
+        }
+
+        function remove(){
+            var $m = $(this).parents('.message');
+
+            $.getJSON('/del', { id: $m.attr('mid') }, function(data){ });
+        }
+    </script>
+  </head>
+  <body>
+    <h1>Chat <a href="/logout">[logout <%= username %>]</a></h1>
+
+    <div id="messages">
+        <div class="template">
+            <span class="user"></span>
+            <span class="text"></span>
+
+            <span class="del" >X</span>
+        </div>
+    </div>
+
+    <input id="messageText" />
+    <input id="send" type="button" onclick="sendMes()" value="send">
+  </body>
+</html>
